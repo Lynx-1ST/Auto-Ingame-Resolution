@@ -1,144 +1,139 @@
+# AutoRes Pro
 
-# Auto Resolution Switcher (WMI)
+Tự động đổi độ phân giải màn hình khi chạy game và khôi phục lại khi thoát.
 
-A lightweight Windows tray utility that automatically changes the screen resolution when a specific game starts and restores the previous resolution when the game exits.
-This version uses **WMI process events** instead of polling, resulting in lower CPU usage and faster detection.
-
----
-
-## Features
-
-* Automatically detects game start and exit
-* Switches to a custom resolution when the game launches
-* Restores the previous resolution after the game closes
-* Saves configuration to `config.json`
-* Small system tray application
-* Debug log window
-* Embedded NirCmd (no separate installation required)
-* Low CPU usage (event-driven monitoring)
+Ứng dụng chạy nền với tray icon, có giao diện debug và quản lý game.
 
 ---
 
-## How It Works
+## Tính năng
 
-The program listens to Windows process events using WMI:
+- Tự động phát hiện game khởi động bằng WMI
+- Tự khôi phục độ phân giải khi game tắt
+- Tray icon đổi trạng thái realtime
+- Lưu cấu hình vào file config.json
+- Hỗ trợ nhiều game
+- Giao diện debug log realtime
+- Cho phép chỉnh độ phân giải theo game
+- Lưu và khôi phục độ phân giải hiện tại
+- Chạy nền, không cần console
 
-* `Win32_ProcessStartTrace`
-* `Win32_ProcessStopTrace`
+Cơ chế hoạt động:
 
-Workflow:
-
-1. Wait for the game process to start
-2. Change resolution to the configured value
-3. Wait for the process to exit
-4. Restore the original resolution automatically
-
----
-
-## Screenshot / UI
-
-Tray menu includes:
-
-* Show Debug Log
-* Save current resolution
-* Restore saved resolution
-* Set game resolution
-* Exit
+- Detect start: WMI event (nhẹ CPU)
+- Detect exit: kiểm tra process bằng psutil
+- Đổi độ phân giải: win32 API / nircmd (embedded)
 
 ---
 
-## Requirements (Python)
+## Yêu cầu (nếu chạy từ source)
 
-Python 3.9+
+Python 3.10+
 
-Install dependencies:
+Cài thư viện:
 
 ```bash
-pip install pystray pillow pywin32 wmi
+pip install pystray pillow pywin32 wmi psutil
+````
+
+---
+
+## Chạy từ source
+
+```bash
+python auto_res_pro_tray_wmi.py
 ```
 
 ---
 
-## Build EXE
+## Build file EXE (Nuitka)
 
-Using PyInstaller:
+Ví dụ lệnh build:
 
 ```bash
-pyinstaller --onefile --noconsole --icon=icon.ico main.py
+python -m nuitka auto_res_pro_tray_wmi.py ^
+--standalone ^
+--onefile ^
+--windows-disable-console ^
+--enable-plugin=tk-inter ^
+--include-package=win32com ^
+--include-package=pythoncom ^
+--include-package=pywintypes ^
+--include-package=wmi ^
+--include-package=psutil
 ```
 
-Optional (embed icon properly in tray and exe):
+File exe sẽ nằm trong thư mục:
 
-```bash
-pyinstaller --onefile --noconsole --icon=icon.ico --add-data "icon.ico;." main.py
+```
+dist/
 ```
 
 ---
 
-## Config File
+## Cấu hình
 
-The program automatically creates:
+File:
 
 ```
 config.json
 ```
 
-Example:
+Ví dụ:
 
 ```json
 {
-  "game_resolution": [1440, 1080, 32, 240],
-  "last_user_resolution": [1920, 1080, 32, 144]
+  "games": [
+    {
+      "name": "Delta Force",
+      "process": "DeltaForceClient-Win64-Shipping.exe"
+    }
+  ],
+  "current_game": 0,
+  "game_resolution": [1440, 1080, 32, 60],
+  "last_user_resolution": null
 }
 ```
 
 ---
 
-## Customization
+## Cách sử dụng
 
-Edit these values in the source:
+1. Chạy chương trình
+2. Icon xuất hiện ở system tray
+3. Click chuột phải:
 
-```python
-GAME_PROCESS = "DeltaForceClient-Win64-Shipping.exe"
-```
+   * Chọn game
+   * Chỉnh độ phân giải
+   * Xem debug log
 
-You can change this to any game executable.
+Khi game chạy:
 
----
+* Đổi độ phân giải tự động
 
-## Safety Notes
+Khi game tắt:
 
-This tool:
-
-* does not inject into games
-* does not modify memory
-* does not hook DirectX or graphics drivers
-* only monitors Windows process events and changes display settings
-* use with caution
-Behavior is similar to normal desktop utilities that adjust resolution.
+* Khôi phục độ phân giải ban đầu
 
 ---
 
-## Known Limitations
+## Lưu ý
 
-* Some GPUs or monitors may reject unsupported resolutions
-* Certain games force resolution internally and may override system settings
-* Requires administrator privileges in some Windows configurations
+* Một số game có anti-cheat có thể không cho đổi resolution ngoài game.
+* Nên chạy bằng quyền Administrator nếu đổi độ phân giải thất bại.
 
 ---
 
-## Project Structure
+## Cấu trúc chính
 
-```
-main.py
-icon.ico
-config.json (auto-created)
-```
+* Hybrid monitor (WMI + psutil)
+* Tray UI (pystray)
+* Debug window (tkinter)
+* Config system (JSON)
 
 ---
 
 ## License
 
-MIT License
+Personal use.
 
----
